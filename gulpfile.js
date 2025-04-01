@@ -1,10 +1,28 @@
-const { src, dest, watch, parallel,series } = require('gulp')
+const { src, dest, watch, parallel, series } = require('gulp')
 const scss = require('gulp-sass')(require('sass'))
 const concat = require('gulp-concat')
 const uglify = require('gulp-uglify-es').default;
 const browserSync = require('browser-sync').create();
 const autoprefixer = require('gulp-autoprefixer');
 const clean = require('gulp-clean');
+const avif = require('gulp-avif')
+const webp = require('gulp-webp')
+const imagemin = require('gulp-imagemin')
+const cached = require('gulp-cached')
+
+
+function images() {
+    return src(['app/images/src/*.*', '!app/images/src/*.svg'])
+        .pipe(avif({ quality: 50 }))
+
+        .pipe(src('app/images/src/*.*'))
+        .pipe(webp())
+
+        .pipe(src('app/images/src/*.*'))
+        .pipe(imagemin())
+
+        .pipe(dest('app/images/dist'))
+}
 function scripts() {
     return src([
         'app/js/*.js',
@@ -27,17 +45,16 @@ function styles() {
 }
 
 function watching() {
-    watch(['app/scss/style.scss'], styles)
-    watch(['app/js/main.js'], scripts)
-    watch(['app/*.html']).on('change', browserSync.reload)
-}
-function browsersync() {
     browserSync.init({
         server: {
             baseDir: "app/"
         }
-    });
+    })
+    watch(['app/scss/style.scss'], styles)
+    watch(['app/js/main.js'], scripts)
+    watch(['app/*.html']).on('change', browserSync.reload)
 }
+
 function cleanDist() {
     return src('dist')
         .pipe(clean())
@@ -50,10 +67,10 @@ function building() {
     ], { base: 'app' })
         .pipe(dest('dist'))
 }
+
 exports.styles = styles
+exports.images = images
 exports.scripts = scripts
 exports.watching = watching
-exports.browsersync = browsersync
-
-exports.build = series(cleanDist,building)
-exports.default = parallel(styles, scripts, browsersync, watching)
+exports.build = series(cleanDist, building)
+exports.default = parallel(styles, scripts, watching)
